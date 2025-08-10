@@ -81,7 +81,7 @@ runs:
         SRC_ARGS=""
         for s in ${{ inputs.src }}; do SRC_ARGS+=" --src $s"; done
         echo "src_args=$SRC_ARGS" >> "$GITHUB_OUTPUT"
-    
+        
         # Package spec for uvx
         if [ "${{ inputs.animadao-version }}" = "latest" ]; then
           echo 'from_spec=anima-dao' >> "$GITHUB_OUTPUT"
