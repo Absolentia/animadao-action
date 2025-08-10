@@ -41,3 +41,25 @@ jobs:
           fail-if-outdated: "false"
           artifact-name: animadao-report-installed-${{ matrix.python-version }}
           python-version: ${{ matrix.python-version }}
+
+      - name: AnimaDao (declared)
+        uses: Absolentia/animadao-action@v1
+        with:
+          mode: declared
+          ignore: pip,setuptools,wheel,ruff
+          fail-if-outdated: "true"
+          max-unused: "0"
+          format: md
+          artifact-name: animadao-report-${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
+
+      - name: AnimaDao (declared)
+        uses: Absolentia/animadao-action@v1
+        with:
+          mode: installed
+          ignore: pip,setuptools,wheel,ruff
+          fail-if-outdated: "true"
+          max-unused: "0"
+          format: md
+          artifact-name: animadao-report-${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
