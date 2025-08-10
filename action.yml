@@ -134,7 +134,7 @@ runs:
       shell: bash
       run: |
         uvx --from "${{ steps.prep.outputs.from_spec }}" animadao-pre-commit-gate \
-          --project . ${{ steps.prep.outputs.src_args }} \
+          --project . \
           --mode "${{ inputs.mode }}" \
           --pypi-ttl "${{ inputs.pypi-ttl }}" \
           --pypi-concurrency "${{ inputs.pypi-concurrency }}" \
