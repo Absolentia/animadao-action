@@ -45,8 +45,8 @@ inputs:
   artifact-name:
     description: "Artifact name (unique per job/matrix)"
     required: false
-    default: "anima-report"
-  anima-version:
+    default: "animadao-report"
+  animadao-version:
     description: "AnimaDao package version (e.g. 0.1.5). Use 'latest' for latest"
     required: false
     default: "latest"
@@ -77,15 +77,15 @@ runs:
         for i in "${IG[@]}"; do IGN_ARGS+=" --ignore ${i}"; done
         echo "ign_args=$IGN_ARGS" >> "$GITHUB_OUTPUT"
         # Package spec for uvx
-        if [ "${{ inputs.anima-version }}" = "latest" ]; then
-          echo 'from_spec=anima-dao' >> "$GITHUB_OUTPUT"
+        if [ "${{ inputs.animadao-version }}" = "latest" ]; then
+          echo 'from_spec=animadao' >> "$GITHUB_OUTPUT"
         else
-          echo 'from_spec=anima-dao@'${{ inputs.anima-version }} >> "$GITHUB_OUTPUT"
+          echo 'from_spec=animadao@'${{ inputs.animadao-version }} >> "$GITHUB_OUTPUT"
         fi
         # Source roots (space-separated)
         echo "src_list=${{ inputs.src }}" >> "$GITHUB_OUTPUT"
         # Report dir
-        REPORT_DIR="${RUNNER_TEMP}/anima"
+        REPORT_DIR="${RUNNER_TEMP}/animadao"
         mkdir -p "$REPORT_DIR"
         echo "report_dir=$REPORT_DIR" >> "$GITHUB_OUTPUT"
 
