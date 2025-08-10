@@ -78,9 +78,9 @@ runs:
         echo "ign_args=$IGN_ARGS" >> "$GITHUB_OUTPUT"
         # Package spec for uvx
         if [ "${{ inputs.animadao-version }}" = "latest" ]; then
-          echo 'from_spec=animadao' >> "$GITHUB_OUTPUT"
+          echo 'from_spec=anima-dao' >> "$GITHUB_OUTPUT"
         else
-          echo 'from_spec=animadao@'${{ inputs.animadao-version }} >> "$GITHUB_OUTPUT"
+          echo 'from_spec=anima-dao@'${{ inputs.animadao-version }} >> "$GITHUB_OUTPUT"
         fi
         # Source roots (space-separated)
         echo "src_list=${{ inputs.src }}" >> "$GITHUB_OUTPUT"
