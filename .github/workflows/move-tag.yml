@@ -1,0 +1,23 @@
+name: move-v1-pointer
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  retag-v1:
+    if: startsWith(github.event.release.tag_name, 'v1.')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Move tag v1 to ${{ github.event.release.tag_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags
+          git tag -fa v1 "${{ github.event.release.tag_name }}" -m "Point v1 to ${{ github.event.release.tag_name }}"
+          git push origin v1 --force
