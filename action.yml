@@ -76,14 +76,22 @@ runs:
         IGN_ARGS=""
         for i in "${IG[@]}"; do IGN_ARGS+=" --ignore ${i}"; done
         echo "ign_args=$IGN_ARGS" >> "$GITHUB_OUTPUT"
+
+        # src: "a b c" -> --src a --src b --src c
+        SRC_ARGS=""
+        for s in ${{ inputs.src }}; do SRC_ARGS+=" --src $s"; done
+        echo "src_args=$SRC_ARGS" >> "$GITHUB_OUTPUT"
+    
         # Package spec for uvx
         if [ "${{ inputs.animadao-version }}" = "latest" ]; then
           echo 'from_spec=anima-dao' >> "$GITHUB_OUTPUT"
         else
           echo 'from_spec=anima-dao@'${{ inputs.animadao-version }} >> "$GITHUB_OUTPUT"
         fi
+
         # Source roots (space-separated)
         echo "src_list=${{ inputs.src }}" >> "$GITHUB_OUTPUT"
+
         # Report dir
         REPORT_DIR="${RUNNER_TEMP}/animadao"
         mkdir -p "$REPORT_DIR"
@@ -93,7 +101,7 @@ runs:
       shell: bash
       run: |
         uvx --from "${{ steps.prep.outputs.from_spec }}" animadao report \
-          --project . --src ${{ steps.prep.outputs.src_list }} \
+          --project . ${{ steps.prep.outputs.src_args }} \
           --mode "${{ inputs.mode }}" \
           --format "${{ inputs.format }}" \
           --pypi-ttl "${{ inputs.pypi-ttl }}" \
@@ -126,7 +134,7 @@ runs:
       shell: bash
       run: |
         uvx --from "${{ steps.prep.outputs.from_spec }}" animadao-pre-commit-gate \
-          --project . \
+          --project . ${{ steps.prep.outputs.src_args }} \
           --mode "${{ inputs.mode }}" \
           --pypi-ttl "${{ inputs.pypi-ttl }}" \
           --pypi-concurrency "${{ inputs.pypi-concurrency }}" \
