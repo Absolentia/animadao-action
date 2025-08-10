@@ -1,0 +1,135 @@
+name: "AnimaDao Check"
+description: "Dependency health reports + policy gate (declared/installed) via uvx"
+author: "Absolentia"
+branding:
+  icon: "check-circle"
+  color: "blue"
+
+inputs:
+  mode:
+    description: "declared | installed"
+    required: false
+    default: "declared"
+  ignore:
+    description: "Comma-separated packages to ignore (case-insensitive)"
+    required: false
+    default: "pip,setuptools,wheel,ruff"
+  fail-if-outdated:
+    description: "Fail if any outdated packages are found"
+    required: false
+    default: "true"
+  max-unused:
+    description: "Max allowed unused declared deps (declared mode only)"
+    required: false
+    default: "0"
+  format:
+    description: "Report format: json | md | html"
+    required: false
+    default: "md"
+  src:
+    description: "Source root(s) for import scan (space-separated); default is project root"
+    required: false
+    default: "."
+  pypi-ttl:
+    description: "PyPI cache TTL seconds"
+    required: false
+    default: "86400"
+  pypi-concurrency:
+    description: "Parallel PyPI requests"
+    required: false
+    default: "8"
+  upload-artifact:
+    description: "Upload generated report(s) as an artifact"
+    required: false
+    default: "true"
+  artifact-name:
+    description: "Artifact name (unique per job/matrix)"
+    required: false
+    default: "anima-report"
+  anima-version:
+    description: "AnimaDao package version (e.g. 0.1.5). Use 'latest' for latest"
+    required: false
+    default: "latest"
+  python-version:
+    description: "Setup a specific Python version with actions/setup-python"
+    required: false
+    default: "3.12"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install uv
+      shell: bash
+      run: pipx install uv
+
+    - name: Prepare args
+      id: prep
+      shell: bash
+      run: |
+        # Build ignore args from comma-separated list
+        IFS=, read -ra IG <<< "${{ inputs.ignore }}"
+        IGN_ARGS=""
+        for i in "${IG[@]}"; do IGN_ARGS+=" --ignore ${i}"; done
+        echo "ign_args=$IGN_ARGS" >> "$GITHUB_OUTPUT"
+        # Package spec for uvx
+        if [ "${{ inputs.anima-version }}" = "latest" ]; then
+          echo 'from_spec=anima-dao' >> "$GITHUB_OUTPUT"
+        else
+          echo 'from_spec=anima-dao@'${{ inputs.anima-version }} >> "$GITHUB_OUTPUT"
+        fi
+        # Source roots (space-separated)
+        echo "src_list=${{ inputs.src }}" >> "$GITHUB_OUTPUT"
+        # Report dir
+        REPORT_DIR="${RUNNER_TEMP}/anima"
+        mkdir -p "$REPORT_DIR"
+        echo "report_dir=$REPORT_DIR" >> "$GITHUB_OUTPUT"
+
+    - name: Generate report
+      shell: bash
+      run: |
+        uvx --from "${{ steps.prep.outputs.from_spec }}" animadao report \
+          --project . --src ${{ steps.prep.outputs.src_list }} \
+          --mode "${{ inputs.mode }}" \
+          --format "${{ inputs.format }}" \
+          --pypi-ttl "${{ inputs.pypi-ttl }}" \
+          --pypi-concurrency "${{ inputs.pypi-concurrency }}" \
+          --out "${{ steps.prep.outputs.report_dir }}/report.${{ inputs.format }}" \
+          ${{ steps.prep.outputs.ign_args }}
+
+    - name: Append report to Job Summary
+      if: always()
+      shell: bash
+      run: |
+        echo "## AnimaDao — ${{ inputs.mode }} report" >> "$GITHUB_STEP_SUMMARY"
+        if [ "${{ inputs.format }}" = "md" ]; then
+          cat "${{ steps.prep.outputs.report_dir }}/report.md" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '> Report attached as artifact.' >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Upload report artifact
+      if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.prep.outputs.report_dir }}
+        if-no-files-found: error
+        retention-days: 7
+
+    - name: Policy gate
+      shell: bash
+      run: |
+        uvx --from "${{ steps.prep.outputs.from_spec }}" animadao-pre-commit-gate \
+          --project . \
+          --mode "${{ inputs.mode }}" \
+          --pypi-ttl "${{ inputs.pypi-ttl }}" \
+          --pypi-concurrency "${{ inputs.pypi-concurrency }}" \
+          $([ "${{ inputs.fail-if-outdated }}" = "true" ] && echo "--fail-if-outdated") \
+          --max-unused "${{ inputs.max-unused }}" \
+          ${{ steps.prep.outputs.ign_args }}
